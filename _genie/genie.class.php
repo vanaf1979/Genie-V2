@@ -1,29 +1,30 @@
 <?
+
+error_reporting(E_ALL);
+ini_set("display_errors", 1);
+
 class genie
 {
-    private var $cacheFile = '';
-    private var $fileType = '';
-    private var $debug = false;
-    private var $files = [];
-    private var $rawData = [];
-    private var $minData = '';
-    private var $now = time();
-    private var $yesterday = $this->now - ( ( 60 * 60 ) * 24 );
-    private var $lastWeek = $this->now - ( ( ( 60 * 60 ) * 24 ) * 7 );
-
-
-    function genie()
-    {
-        $this->__construct();
-    }
+    var $cacheFile = '';
+    var $fileType = '';
+    var $debug = false;
+    var $files;
+    var $rawData;
+    var $minData = '';
+    var $now = 0;
+    var $yesterday = 0;
+    var $lastWeek = 0;
 
 
     function __construct()
     {
-        ob_start("ob_gzhandler");
-        header( 'Expires: '.gmdate( 'D, d M Y H:i:s \G\M\T', time() + (((60 * 60) * 24) * 31)) );
-    }
+      $this->now = time();
+      $this->yesterday = $this->now - ( ( 60 * 60 ) * 24 );
+      $this->lastWeek = $this->now - ( ( ( 60 * 60 ) * 24 ) * 7 );
 
+      ob_start("ob_gzhandler");
+      header( 'Expires: '.gmdate( 'D, d M Y H:i:s \G\M\T', time() + (((60 * 60) * 24) * 31)) );
+    }
 
     /*
     * Convert an object to an array
@@ -35,7 +36,7 @@ class genie
     */
     function init( $cacheFile , $type , $debug = false  )
     {
-        $this->cacheFile = './output-cache/' . $cacheFile . '.genie';
+        $this->cacheFile = dirname(__FILE__) . '/output-cache/' . $cacheFile . '.genie';
         $this->type = $type;
         $this->debug = $debug;
     }
@@ -47,7 +48,7 @@ class genie
     }
 
 
-    function grantWish()
+    function grandWish()
     {
         if ( ! $this->debug and $this->cacheFileExists() and $this->cacheFile24() )
         {
@@ -61,11 +62,23 @@ class genie
 
     // Private functions
 
+    private function cacheFileExists()
+    {
+        if( file_exists( $this->cacheFile ) )
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
     private function cacheFile24( )
     {
         $cashFileDate = filemtime( $this->cacheFile );
 
-        if( $cashFileDate > $yesterday )
+        if( $cashFileDate > $this->yesterday )
         {
             return true;
         }
@@ -80,7 +93,7 @@ class genie
     {
       $cashFileDate = filemtime( $file );
 
-      if( $cashFileDate > $lastweek )
+      if( $cashFileDate > $this->lastWeek )
       {
           return true;
       }
@@ -95,7 +108,7 @@ class genie
     {
         foreach( $this->files as $file )
         {
-            $this->rawData[] = $this->getFile( $file )
+            $this->rawData[] = $this->getFile( $file );
         }
 
         if( $this->fileType == 'js' )
@@ -111,12 +124,15 @@ class genie
 
         $this->writeCacheFile();
 
+        $this->outputCacheFile();
+
     }
 
 
     private function minifyJsData( $data )
     {
-        require './jsmin.php';
+        echo dirname(__FILE__) . '_genie/jsmin.php';
+        require dirname(__FILE__) . '_genie/jsmin.php';
         return JSMin::minify( implode( "\n", $data ) );
     }
 
@@ -140,9 +156,10 @@ class genie
 
     private function writeCacheFile()
     {
-      $fileToWrite = fopen( $this->cacheFile , 'w' ) or die( "can't open file" );
-      fwrite( $fileToWrite , $this->minData );
-      fclose( $fileToWrite );
+        //echo $this->cacheFile;
+        $fileToWrite = fopen( $this->cacheFile , 'w' ) or die( "can't open file" );
+        fwrite( $fileToWrite , $this->minData );
+        fclose( $fileToWrite );
     }
 
 
@@ -150,13 +167,14 @@ class genie
     {
         if ( substr( $file, 0, 8 ) == "https://" || substr( $file, 0, 7 ) == "http://" )
         {
-            return $this->fileGetContentsAndCache( $file )
+            return $this->fileGetContentsAndCache( $file );
         }
         else
         {
-            if( file_exists( $file ) )
+            //echo dirname( dirname(__FILE__) ) . '/' .  $file;
+            if( file_exists( dirname( dirname(__FILE__) ) . '/' .  $file ) )
             {
-                return file_get_contents( $files );
+                return file_get_contents( dirname( dirname(__FILE__) ) . '/' .  $file );
             }
             else
             {
@@ -166,10 +184,10 @@ class genie
     }
 
 
-    private function* fileGetContentsAndCache( $file )
+    private function fileGetContentsAndCache( $file )
     {
-        $remoteFileName = basename( $file );
-        $localFileName = './remote-cache/' . $remoteFileName . '.genie';
+        $remoteFileName = base64_encode( basename( $file ) );
+        $localFileName = dirname(__FILE__) . '/remote-cache/' . $remoteFileName . '.genie';
 
         if( file_exists( $localFileName ) and $this->cacheFileWeek( $localFileName ) )
         {
@@ -177,7 +195,7 @@ class genie
         }
         else
         {
-          $remoteData = file_get_contents( $files );
+          $remoteData = file_get_contents( $file );
 
           $fileToWrite = fopen( $localFileName , 'w' ) or die( "can't open file" );
           fwrite( $fileToWrite , $remoteData );
@@ -190,15 +208,17 @@ class genie
 
     private function outputCacheFile( )
     {
-        $this->setHeaders();
+        $this->setHeader();
+
         if( $this->minData > '' )
         {
-            echo $this->minData();
+            echo $this->minData;
         }
         else
-            import( $this->cacheFile );
+        {
+            include( $this->cacheFile );
         }
-        $thos=>killGenie();
+        $this->killGenie();
     }
 
 
