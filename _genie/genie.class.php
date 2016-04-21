@@ -1,7 +1,11 @@
 <?
-
-error_reporting(E_ALL);
-ini_set("display_errors", 1);
+/*
+Class Name: 	Genie
+Description: 	Combine, Minify and Cache both local and remote static js/css files.
+Author: 		  Vanaf1979
+Author URI: 	http://vanaf1979.nl/
+Version: 		  2.0
+*/
 
 class genie
 {
@@ -19,22 +23,15 @@ class genie
     function __construct()
     {
       $this->now = time();
-      $this->yesterday = $this->now - ( ( 60 * 60 ) * 24 );
-      $this->lastWeek = $this->now - ( ( ( 60 * 60 ) * 24 ) * 7 );
+      $this->yesterday = $this->now - 86400;
+      $this->lastWeek = $this->now - 604800;
 
       ob_start("ob_gzhandler");
-      header( 'Expires: '.gmdate( 'D, d M Y H:i:s \G\M\T', time() + (((60 * 60) * 24) * 31)) );
+      header( 'Expires: '.gmdate( 'D, d M Y H:i:s \G\M\T', time() + 2678400) );
     }
 
-    /*
-    * Convert an object to an array
-    *
-    * @param    string  $cacheFile  Name of the output cachefile
-    * @param    string  $type       Js or class
-    * @param    bool    $debug      Force cachefile rebuilding
-    * @return   nothing
-    */
-    function init( $cacheFile , $type , $debug = false  )
+
+    function init( $cacheFile , $type , $debug = false )
     {
         $this->cacheFile = dirname(__FILE__) . '/output-cache/' . $cacheFile . '.genie';
         $this->type = $type;
@@ -60,7 +57,6 @@ class genie
         }
     }
 
-    // Private functions
 
     private function cacheFileExists()
     {
@@ -129,9 +125,12 @@ class genie
     }
 
 
+    /*
+    * Class at https://github.com/rgrove/jsmin-php
+    * Have to find another sollution, jsmin is out of date.
+    */
     private function minifyJsData( $data )
     {
-        echo dirname(__FILE__) . '_genie/jsmin.php';
         require dirname(__FILE__) . '_genie/jsmin.php';
         return JSMin::minify( implode( "\n", $data ) );
     }
@@ -139,24 +138,20 @@ class genie
 
     private function minifyCssData( $data )
     {
-        // thanx to http://www.catswhocode.com/blog/3-ways-to-compress-css-files-using-php
         $data = implode( "\n", $data );
+        // remove comments
       	$data = preg_replace( '#\s+#', ' ', $data );
       	$data = preg_replace( '#/\*.*?\*/#s', '', $data );
-      	$data = str_replace( '; ', ';', $data );
-      	$data = str_replace( ': ', ':', $data );
-      	$data = str_replace( ' {', '{', $data );
-      	$data = str_replace( '{ ', '{', $data );
-      	$data = str_replace( ', ', ',', $data );
-      	$data = str_replace( '} ', '}', $data );
-      	$data = str_replace( ';}', '}', $data );
-        return trim( $data );
+        // remove whitespace
+        $what = array( '; ' , ': ' , ' {', '{ ', ', ' , '} ' , ';}' );
+        $with = array( ';' , ':' , '{', '{', ',' , '}' , '}' );
+      	$data = trim( str_replace( $what, $with, $data );
+        return $data;
     }
 
 
     private function writeCacheFile()
     {
-        //echo $this->cacheFile;
         $fileToWrite = fopen( $this->cacheFile , 'w' ) or die( "can't open file" );
         fwrite( $fileToWrite , $this->minData );
         fclose( $fileToWrite );
@@ -171,14 +166,9 @@ class genie
         }
         else
         {
-            //echo dirname( dirname(__FILE__) ) . '/' .  $file;
             if( file_exists( dirname( dirname(__FILE__) ) . '/' .  $file ) )
             {
                 return file_get_contents( dirname( dirname(__FILE__) ) . '/' .  $file );
-            }
-            else
-            {
-              // Do some error stuff
             }
         }
     }
@@ -186,6 +176,7 @@ class genie
 
     private function fileGetContentsAndCache( $file )
     {
+        /* This can create very long filenames. Must look for a better way */
         $remoteFileName = base64_encode( basename( $file ) );
         $localFileName = dirname(__FILE__) . '/remote-cache/' . $remoteFileName . '.genie';
 
@@ -241,8 +232,4 @@ class genie
     }
 
 }
-
-
-
-
 ?>
