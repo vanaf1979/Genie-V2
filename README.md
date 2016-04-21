@@ -59,6 +59,12 @@ Combine, Minify and Cache both local and remote static js/css files.
   - Check the demo files ( demo.php and header.css.php etc ) its very simple.
   - Make sure your /output-cache and /remote-cache folder are writable.
 
+## TODO
+  - Preserve .js and .css filenames in html source (through .htaccess?)
+  - Find alternative for jsmin.
+  - Add workflow for browser checks.
+
+
 ## Questions & Answers
 **Q:** I need help?  
 **A:** open a issue.

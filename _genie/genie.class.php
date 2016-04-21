@@ -1,6 +1,6 @@
 <?
 /*
-Class Name: 	Genie
+Theme Name: 	Genie
 Description: 	Combine, Minify and Cache both local and remote static js/css files.
 Author: 		  Vanaf1979
 Author URI: 	http://vanaf1979.nl/
@@ -10,7 +10,7 @@ Version: 		  2.0
 class genie
 {
     var $cacheFile = '';
-    var $fileType = '';
+    var $fileType = 'js';
     var $debug = false;
     var $files;
     var $rawData;
@@ -34,7 +34,7 @@ class genie
     function init( $cacheFile , $type , $debug = false )
     {
         $this->cacheFile = dirname(__FILE__) . '/output-cache/' . $cacheFile . '.genie';
-        $this->type = $type;
+        $this->fileType = $type;
         $this->debug = $debug;
     }
 
@@ -111,7 +111,7 @@ class genie
         {
             $this->minData = $this->minifyJsData( $this->rawData );
         }
-        else
+        elseif( $this->fileType == 'css' )
         {
             $this->minData = $this->minifyCssData( $this->rawData );
         }
@@ -131,7 +131,7 @@ class genie
     */
     private function minifyJsData( $data )
     {
-        require dirname(__FILE__) . '_genie/jsmin.php';
+        require dirname(__FILE__) . '/jsmin.php';
         return JSMin::minify( implode( "\n", $data ) );
     }
 
@@ -145,7 +145,7 @@ class genie
         // remove whitespace
         $what = array( '; ' , ': ' , ' {', '{ ', ', ' , '} ' , ';}' );
         $with = array( ';' , ':' , '{', '{', ',' , '}' , '}' );
-      	$data = trim( str_replace( $what, $with, $data );
+      	$data = trim( str_replace( $what, $with, $data ) );
         return $data;
     }
 
@@ -203,10 +203,12 @@ class genie
 
         if( $this->minData > '' )
         {
+            //echo 'build';
             echo $this->minData;
         }
         else
         {
+            //echo 'reuse';
             include( $this->cacheFile );
         }
         $this->killGenie();
